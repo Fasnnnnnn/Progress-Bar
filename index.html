@@ -1,0 +1,610 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>进度条生成器</title>
+    <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=ZCOOL+XiaoWei&display=swap" rel="stylesheet">
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: 'ZCOOL XiaoWei', "Microsoft YaHei", sans-serif;
+            background: url('https://i.imgur.com/ZKh9oQz.png') center/cover fixed;
+            color: #e6d5b8;
+            min-height: 100vh;
+            position: relative;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(20, 24, 44, 0.7);
+            z-index: -1;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            gap: 60px;
+            justify-content: center;
+            padding: 20px;
+            position: relative;
+        }
+
+        .left-panel {
+            width: 500px;
+            min-width: 0;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(20px);
+            border-radius: 12px;
+            padding: 20px;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 8px 32px 0 rgba(74, 144, 226, 0.15);
+            position: relative;
+            overflow: hidden;
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+        }
+
+        .left-panel::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(
+                45deg,
+                transparent 0%,
+                rgba(74, 144, 226, 0.1) 50%,
+                transparent 100%
+            );
+            animation: panelShine 4s linear infinite;
+        }
+
+        @keyframes panelShine {
+            0% { transform: translateX(-100%) translateY(-100%); }
+            100% { transform: translateX(100%) translateY(100%); }
+        }
+
+        .right-panel {
+            width: 600px;
+            position: sticky;
+            top: 20px;
+            align-self: flex-start;
+            display: flex;
+            justify-content: center;
+        }
+
+        .input-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            color: #e6d5b8;
+            font-size: 18px;
+            text-shadow: 0 0 10px rgba(74, 144, 226, 0.5);
+        }
+
+        input {
+            width: 100%;
+            padding: 8px;
+            margin-bottom: 10px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(74, 144, 226, 0.3);
+            border-radius: 4px;
+            color: #e6d5b8;
+            font-family: inherit;
+            font-size: 16px;
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            transition: all 0.3s ease;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: rgba(74, 144, 226, 0.8);
+            box-shadow: 0 0 15px rgba(74, 144, 226, 0.2);
+        }
+
+        input::placeholder {
+            color: rgba(230, 213, 184, 0.5);
+        }
+
+        .preview {
+            margin-top: 20px;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 8px 32px 0 rgba(74, 144, 226, 0.15);
+            position: relative;
+            margin-top: 0;
+            width: 100%;
+            max-width: 500px;
+            background: rgba(255, 255, 255, 0.25);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            box-shadow: 0 8px 32px 0 rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+        }
+
+        .timeline-preview {
+            position: relative;
+            width: 100%;
+            height: 200px;
+            background: transparent;
+            padding: 20px 0;
+            display: flex;
+            align-items: flex-end;
+        }
+
+        .timeline-preview::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 12px;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1;
+        }
+
+        .nav-item {
+            position: absolute;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            transform: translateX(-50%);
+            bottom: 0;
+            z-index: 2;
+        }
+
+        .nav-text {
+            background: #000;
+            color: white;
+            padding: 2px 4px;
+            border-radius: 4px;
+            font-size: 10px;
+            white-space: nowrap;
+            position: relative;
+            bottom: 100%;
+            margin-bottom: 2px;
+            display: inline-block;
+            line-height: 1;
+            height: fit-content;
+            width: fit-content;
+        }
+
+        .nav-line {
+            width: 1px;
+            background: #0066ff;
+            transition: height 0.3s;
+        }
+
+        button {
+            padding: 10px 20px;
+            background: rgba(74, 144, 226, 0.2);
+            color: #e6d5b8;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            border: 1px solid rgba(74, 144, 226, 0.3);
+            box-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
+            position: relative;
+            overflow: hidden;
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+        }
+
+        button::after {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(
+                45deg,
+                transparent 0%,
+                rgba(255, 255, 255, 0.2) 50%,
+                transparent 100%
+            );
+            transition: transform 0.3s ease;
+            transform: translateX(-100%) translateY(-100%);
+        }
+
+        button:hover::after {
+            transform: translateX(100%) translateY(100%);
+        }
+
+        button:hover {
+            background: rgba(74, 144, 226, 0.4);
+            transform: translateY(-1px);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        #itemList {
+            margin: 20px 0;
+        }
+
+        .list-item {
+            background: rgba(255, 255, 255, 0.08);
+            padding: 10px;
+            margin-bottom: 10px;
+            border-radius: 4px;
+            display: flex;
+            justify-content: flex-start;
+            align-items: center;
+            gap: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            transition: all 0.3s ease;
+        }
+
+        .list-item:hover {
+            border-color: rgba(74, 144, 226, 0.5);
+            box-shadow: 0 0 15px rgba(74, 144, 226, 0.2);
+        }
+
+        .item-number {
+            min-width: 24px;
+            height: 24px;
+            background: linear-gradient(135deg, rgba(74, 144, 226, 0.4) 0%, rgba(74, 144, 226, 0.2) 100%);
+            color: #e6d5b8;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 12px;
+            font-weight: bold;
+            border: 1px solid rgba(74, 144, 226, 0.3);
+        }
+
+        .list-item input {
+            width: 120px;
+            margin: 0;
+            padding: 4px 8px;
+            font-size: 14px;
+        }
+
+        .list-item button {
+            padding: 4px 8px;
+            font-size: 14px;
+        }
+
+        .edit-controls {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .time-input {
+            display: flex;
+            gap: 10px;
+            flex-wrap: nowrap;
+        }
+
+        .time-input input {
+            width: 120px;
+        }
+
+        .time-input button {
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+
+        .height-input {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .height-input input {
+            width: 150px;
+        }
+
+        .download-btn {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            z-index: 10;
+            display: flex;
+            gap: 10px;
+        }
+
+        h1 {
+            color: #e6d5b8;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 36px;
+            text-shadow: 0 0 10px rgba(74, 144, 226, 0.5);
+            position: relative;
+        }
+
+        h1::after {
+            content: '';
+            position: absolute;
+            bottom: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 60%;
+            height: 2px;
+            background: linear-gradient(
+                90deg,
+                transparent 0%,
+                rgba(74, 144, 226, 0.4) 50%,
+                transparent 100%
+            );
+        }
+
+        h3 {
+            color: #e6d5b8;
+            margin-top: 30px;
+            font-size: 24px;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="left-panel">
+            <h1>进度条生成器</h1>
+            
+            <div class="input-group">
+                <label>总时长（秒）</label>
+                <input type="number" id="totalDuration" min="0" step="0.1" placeholder="输入总时长">
+            </div>
+
+            <div class="input-group">
+                <label>添加新节点：</label>
+                <div class="time-input">
+                    <input type="text" id="navText" placeholder="输入文字">
+                    <input type="number" id="timePoint" min="0" step="0.1" placeholder="输入时间点（秒）">
+                    <input type="number" id="heightPoint" min="0" max="100" value="13" placeholder="输入高度（0-100）">
+                    <button onclick="addItem()">添加</button>
+                </div>
+            </div>
+
+            <div id="itemList">
+                <h3>已添加的节点：</h3>
+            </div>
+        </div>
+
+        <div class="right-panel">
+            <div class="preview">
+                <div class="download-btn">
+                    <button onclick="downloadPreview()">下载预览图</button>
+                    <button onclick="downloadBlueBar()">下载蓝色进度条</button>
+                </div>
+                <div id="timelinePreview" class="timeline-preview"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let items = [];
+        let totalDuration = 0;
+
+        document.getElementById('totalDuration').addEventListener('change', function() {
+            totalDuration = parseFloat(this.value);
+            if (totalDuration <= 0) {
+                alert('请输入有效的总时长！');
+                return;
+            }
+            updatePreview();
+        });
+
+        function addItem() {
+            const text = document.getElementById('navText').value;
+            const time = parseFloat(document.getElementById('timePoint').value);
+            const height = parseInt(document.getElementById('heightPoint').value) || 13;
+
+            if (!totalDuration) {
+                alert('请先设置总时长！');
+                return;
+            }
+
+            if (!text || isNaN(time)) {
+                alert('请输入完整的文字和时间！');
+                return;
+            }
+
+            if (time > totalDuration) {
+                alert('时间点不能大于总时长！');
+                return;
+            }
+
+            if (height < 0 || height > 100) {
+                alert('高度必须在0-100之间！');
+                return;
+            }
+
+            items.push({ text, time, height });
+            items.sort((a, b) => a.time - b.time);
+            updateItemList();
+            updatePreview();
+            
+            // 清空输入框
+            document.getElementById('navText').value = '';
+            document.getElementById('timePoint').value = '';
+            document.getElementById('heightPoint').value = '13';
+        }
+
+        function updateItemList() {
+            const list = document.getElementById('itemList');
+            const header = list.querySelector('h3');
+            list.innerHTML = '';
+            list.appendChild(header);
+
+            items.forEach((item, index) => {
+                const div = document.createElement('div');
+                div.className = 'list-item';
+                div.innerHTML = `
+                    <div class="item-number">${index + 1}</div>
+                    <div class="edit-controls">
+                        <input type="text" value="${item.text}" 
+                            onchange="updateItem(${index}, 'text', this.value)">
+                        <input type="number" value="${item.time}" step="0.1" min="0" max="${totalDuration}"
+                            onchange="updateItem(${index}, 'time', this.value)">
+                        <input type="number" value="${item.height}" min="0" max="100"
+                            onchange="updateItem(${index}, 'height', this.value)">
+                    </div>
+                    <button onclick="deleteItem(${index})">删除</button>
+                `;
+                list.appendChild(div);
+            });
+        }
+
+        function updatePreview() {
+            const preview = document.getElementById('timelinePreview');
+            preview.innerHTML = '';
+            const width = preview.offsetWidth - 40;
+            const maxHeight = preview.offsetHeight - 40;
+
+            items.forEach((item, index) => {
+                const position = (item.time / totalDuration) * width + 20;
+                const height = item.height === 0 ? 5 : item.height;
+                const lineHeight = (height / 100) * maxHeight;
+                
+                const itemElement = document.createElement('div');
+                itemElement.className = 'nav-item';
+                itemElement.style.left = `${position}px`;
+                
+                itemElement.innerHTML = `
+                    <div class="nav-text">${item.text}</div>
+                    <div class="nav-line" style="height: ${lineHeight}px"></div>
+                `;
+                preview.appendChild(itemElement);
+            });
+        }
+
+        function deleteItem(index) {
+            items.splice(index, 1);
+            updateItemList();
+            updatePreview();
+        }
+
+        function updateItem(index, field, value) {
+            if (field === 'time') {
+                value = parseFloat(value);
+                if (value > totalDuration) {
+                    alert('时间点不能大于总时长！');
+                    updateItemList(); // 重置为原值
+                    return;
+                }
+            } else if (field === 'height') {
+                value = parseInt(value);
+                if (value < 0 || value > 100) {
+                    alert('高度必须在0-100之间！');
+                    updateItemList(); // 重置为原值
+                    return;
+                }
+            }
+            
+            items[index][field] = value;
+            
+            if (field === 'time') {
+                items.sort((a, b) => a.time - b.time);
+            }
+            
+            updateItemList();
+            updatePreview();
+        }
+
+        function downloadPreview() {
+            const preview = document.querySelector('.preview');
+            const downloadBtn = preview.querySelector('.download-btn');
+            
+            // 临时隐藏下载按钮
+            downloadBtn.style.display = 'none';
+            
+            html2canvas(preview.querySelector('.timeline-preview'), {
+                backgroundColor: null,
+                scale: 2, // 提高图片质量
+            }).then(canvas => {
+                // 恢复下载按钮显示
+                downloadBtn.style.display = 'block';
+                
+                // 创建下载链接
+                const link = document.createElement('a');
+                link.download = '时间轴预览.png';
+                link.href = canvas.toDataURL('image/png', 1.0);
+                link.click();
+            }).catch(error => {
+                console.error('下载失败:', error);
+                downloadBtn.style.display = 'block';
+                alert('下载失败，请重试');
+            });
+        }
+
+        function downloadBlueBar() {
+            const preview = document.querySelector('.preview');
+            const downloadBtn = preview.querySelector('.download-btn');
+            
+            // 创建个临时的进度条容器
+            const tempBar = document.createElement('div');
+            tempBar.style.width = '4000px';
+            tempBar.style.height = '12px';
+            tempBar.style.backgroundColor = '#0066ff';
+            tempBar.style.position = 'fixed';
+            tempBar.style.left = '-9999px';
+            tempBar.style.transform = 'scale(2)';
+            tempBar.style.transformOrigin = 'left top';
+            document.body.appendChild(tempBar);
+            
+            // 临时隐藏下载按钮
+            downloadBtn.style.display = 'none';
+            
+            html2canvas(tempBar, {
+                backgroundColor: null,
+                scale: 16,
+                useCORS: true,
+                logging: false,
+                imageTimeout: 0,
+                removeContainer: true,
+                allowTaint: true,
+                foreignObjectRendering: true
+            }).then(canvas => {
+                // 恢复下载按钮显示
+                downloadBtn.style.display = 'block';
+                
+                // 创建下载链接
+                const link = document.createElement('a');
+                link.download = '蓝色进度条.png';
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+                
+                // 移除临时元素
+                document.body.removeChild(tempBar);
+            }).catch(error => {
+                console.error('下载失败:', error);
+                downloadBtn.style.display = 'block';
+                alert('下载失败，请重试');
+                if (document.body.contains(tempBar)) {
+                    document.body.removeChild(tempBar);
+                }
+            });
+        }
+
+        // 监听窗口大小化，更新预览
+        window.addEventListener('resize', updatePreview);
+    </script>
+</body>
+</html> 
