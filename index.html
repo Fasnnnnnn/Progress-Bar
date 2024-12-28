@@ -13,21 +13,10 @@
             margin: 0;
             padding: 20px;
             font-family: 'ZCOOL XiaoWei', "Microsoft YaHei", sans-serif;
-            background: url('https://i.imgur.com/ZKh9oQz.png') center/cover fixed;
+            background: #1a1f35;
             color: #e6d5b8;
             min-height: 100vh;
             position: relative;
-        }
-
-        body::before {
-            content: '';
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(20, 24, 44, 0.7);
-            z-index: -1;
         }
 
         .container {
@@ -38,6 +27,9 @@
             justify-content: center;
             padding: 20px;
             position: relative;
+            background: linear-gradient(135deg, #1a1f35 0%, #2d3c67 100%);
+            border-radius: 20px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
         }
 
         .left-panel {
